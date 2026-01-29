@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>셀프 포토 프린트</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #4A90D9;
+    --primary-dark: #357ABD;
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --text-light: #86868b;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    padding: 32px 20px 16px;
+  }
+  .header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .header p {
+    color: var(--text-light);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Home ── */
+  .home-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .home-btn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--card);
+    border: none;
+    border-radius: var(--radius);
+    padding: 24px;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-align: left;
+  }
+  .home-btn:active { transform: scale(0.97); }
+  .home-btn .icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .home-btn .icon.camera { background: #e8f0fe; }
+  .home-btn .icon.upload { background: #fef3e8; }
+  .home-btn .desc {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-light);
+    margin-top: 2px;
+  }
+
+  /* ── Camera ── */
+  .camera-wrap {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  #videoPreview {
+    width: 100%;
+    border-radius: var(--radius);
+    background: #000;
+    display: block;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+  }
+  .camera-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    margin-top: 20px;
+  }
+  .shutter-btn {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    border: 4px solid var(--primary);
+    background: white;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s;
+  }
+  .shutter-btn::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: var(--primary);
+    transition: transform 0.15s;
+  }
+  .shutter-btn:active::after { transform: scale(0.85); }
+  .switch-btn, .back-btn-cam {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.06);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── Editor ── */
+  .editor-wrap {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .canvas-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  #photoCanvas {
+    max-width: 100%;
+    max-height: 55vh;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Frame selector */
+  .frame-selector {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .frame-option {
+    flex-shrink: 0;
+    width: 72px; height: 72px;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--card);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: border-color 0.2s, transform 0.15s;
+    text-align: center;
+    padding: 4px;
+  }
+  .frame-option.selected {
+    border-color: var(--primary);
+    transform: scale(1.05);
+  }
+  .frame-option .frame-preview {
+    width: 40px; height: 40px;
+    margin-bottom: 2px;
+  }
+
+  /* Text input */
+  .text-section { margin-bottom: 20px; }
+  .text-input-row {
+    display: flex;
+    gap: 8px;
+  }
+  .text-input-row input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e5e5ea;
+    border-radius: 12px;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .text-input-row input:focus { border-color: var(--primary); }
+  .text-input-row select {
+    padding: 12px;
+    border: 2px solid #e5e5ea;
+    border-radius: 12px;
+    font-size: 14px;
+    background: white;
+    outline: none;
+  }
+  .text-color-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: center;
+  }
+  .color-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.2s;
+  }
+  .color-dot.selected {
+    border-color: var(--primary);
+    transform: scale(1.15);
+  }
+
+  /* Buttons */
+  .action-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .btn {
+    flex: 1;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+  }
+  .btn-secondary {
+    background: #e5e5ea;
+    color: var(--text);
+  }
+
+  /* ── Print Area ── */
+  #printArea {
+    display: none;
+  }
+
+  /* ── File input ── */
+  #fileInput { display: none; }
+
+  /* ── Responsive ── */
+  @media (min-width: 768px) {
+    .header h1 { font-size: 30px; }
+    .home-buttons { flex-direction: row; max-width: 600px; }
+    .home-btn { flex: 1; flex-direction: column; text-align: center; padding: 32px 20px; }
+  }
+
+  /* ── Print styles ── */
+  @media print {
+    body * { visibility: hidden !important; }
+    #printArea, #printArea * {
+      visibility: visible !important;
+    }
+    #printArea {
+      display: block !important;
+      position: fixed;
+      left: 0; top: 0;
+      width: 100%;
+      height: 100%;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      background: white;
+    }
+    #printArea img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    @page {
+      margin: 10mm;
+      size: auto;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== HOME ====== -->
+<div id="homeScreen" class="screen active">
+  <div class="header">
+    <h1>셀프 포토 프린트</h1>
+    <p>사진을 찍거나 골라서 프린트하세요</p>
+  </div>
+  <div class="home-buttons">
+    <button class="home-btn" onclick="openCamera()">
+      <div class="icon camera">&#128247;</div>
+      <div>
+        사진 촬영
+        <div class="desc">카메라로 직접 촬영합니다</div>
+      </div>
+    </button>
+    <button class="home-btn" onclick="openUpload()">
+      <div class="icon upload">&#128193;</div>
+      <div>
+        사진 업로드
+        <div class="desc">갤러리에서 사진을 선택합니다</div>
+      </div>
+    </button>
+  </div>
+  <input type="file" id="fileInput" accept="image/*">
+</div>
+
+<!-- ====== CAMERA ====== -->
+<div id="cameraScreen" class="screen">
+  <div class="header">
+    <h1>사진 촬영</h1>
+  </div>
+  <div class="camera-wrap">
+    <video id="videoPreview" autoplay playsinline></video>
+    <div class="camera-controls">
+      <button class="back-btn-cam" onclick="closeCamera()" title="뒤로">&#9664;</button>
+      <button class="shutter-btn" onclick="capturePhoto()"></button>
+      <button class="switch-btn" onclick="switchCamera()" title="카메라 전환">&#128260;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== EDITOR ====== -->
+<div id="editorScreen" class="screen">
+  <div class="header">
+    <h1>사진 편집</h1>
+  </div>
+  <div class="editor-wrap">
+    <div class="canvas-container">
+      <canvas id="photoCanvas"></canvas>
+    </div>
+
+    <div class="section-title">프레임</div>
+    <div class="frame-selector" id="frameSelector"></div>
+
+    <div class="text-section">
+      <div class="section-title">텍스트</div>
+      <div class="text-input-row">
+        <input type="text" id="textInput" placeholder="문구를 입력하세요" maxlength="40" oninput="renderCanvas()">
+        <select id="textPosition" onchange="renderCanvas()">
+          <option value="bottom">하단</option>
+          <option value="top">상단</option>
+          <option value="center">중앙</option>
+        </select>
+      </div>
+      <div class="text-color-row">
+        <span style="font-size:13px;color:var(--text-light);margin-right:4px;">색상:</span>
+        <div class="color-dot selected" style="background:#fff;box-shadow:inset 0 0 0 1px #ccc" data-color="#ffffff" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#000" data-color="#000000" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#ff3b5c" data-color="#ff3b5c" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#ffcc00" data-color="#ffcc00" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#34c759" data-color="#34c759" onclick="selectColor(this)"></div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-secondary" onclick="goHome()">처음으로</button>
+      <button class="btn btn-primary" onclick="printPhoto()">프린트</button>
+    </div>
+  </div>
+</div>
+
+<!-- Print target -->
+<div id="printArea">
+  <img id="printImage">
+</div>
+
+<script>
+// ── State ──
+let originalImage = null;
+let currentFrame = 'none';
+let textColor = '#ffffff';
+let facingMode = 'environment';
+let stream = null;
+
+// ── Frame definitions ──
+const frames = [
+  { id: 'none',      name: '없음',       border: 0,  color: '#fff',    inner: false, radius: 0  },
+  { id: 'white',     name: '화이트',     border: 40, color: '#ffffff',  inner: false, radius: 0  },
+  { id: 'black',     name: '블랙',       border: 40, color: '#1a1a1a',  inner: false, radius: 0  },
+  { id: 'polaroid',  name: '폴라로이드', border: 0,  color: '#ffffff',  inner: false, radius: 0, polaroid: true },
+  { id: 'pink',      name: '핑크',       border: 35, color: '#ffd6e0',  inner: false, radius: 0  },
+  { id: 'mint',      name: '민트',       border: 35, color: '#c9f0e4',  inner: false, radius: 0  },
+  { id: 'rounded',   name: '라운드',     border: 30, color: '#ffffff',  inner: false, radius: 24 },
+];
+
+// ── Init frames UI ──
+(function initFrames() {
+  const container = document.getElementById('frameSelector');
+  frames.forEach((f, i) => {
+    const el = document.createElement('div');
+    el.className = 'frame-option' + (i === 0 ? ' selected' : '');
+    el.dataset.frame = f.id;
+
+    // Mini preview
+    const preview = document.createElement('div');
+    preview.className = 'frame-preview';
+    if (f.polaroid) {
+      preview.style.cssText = `background:#eee;border:3px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15);border-bottom-width:10px;`;
+    } else if (f.id === 'none') {
+      preview.style.cssText = `background:#eee;border:2px dashed #ccc;border-radius:4px;`;
+    } else {
+      preview.style.cssText = `background:#eee;border:4px solid ${f.color};border-radius:${f.radius ? 6 : 2}px;box-shadow:0 1px 3px rgba(0,0,0,0.1);`;
+    }
+    preview.style.width = '40px';
+    preview.style.height = '40px';
+
+    const label = document.createElement('div');
+    label.textContent = f.name;
+    label.style.fontSize = '10px';
+    label.style.marginTop = '4px';
+
+    el.appendChild(preview);
+    el.appendChild(label);
+    el.onclick = () => selectFrame(f.id, el);
+    container.appendChild(el);
+  });
+})();
+
+// ── Navigation ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  closeCamera();
+  showScreen('homeScreen');
+}
+
+// ── Camera ──
+async function openCamera() {
+  showScreen('cameraScreen');
+  await startCamera();
+}
+
+async function startCamera() {
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1440 } },
+      audio: false
+    });
+    document.getElementById('videoPreview').srcObject = stream;
+  } catch (e) {
+    alert('카메라에 접근할 수 없습니다.\n브라우저 설정에서 카메라 권한을 허용해 주세요.');
+    goHome();
+  }
+}
+
+function closeCamera() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+  document.getElementById('videoPreview').srcObject = null;
+}
+
+async function switchCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  await startCamera();
+}
+
+function capturePhoto() {
+  const video = document.getElementById('videoPreview');
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = video.videoWidth;
+  tempCanvas.height = video.videoHeight;
+  const ctx = tempCanvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+  closeCamera();
+
+  const img = new Image();
+  img.onload = () => {
+    originalImage = img;
+    renderCanvas();
+    showScreen('editorScreen');
+  };
+  img.src = tempCanvas.toDataURL('image/jpeg', 0.95);
+}
+
+// ── Upload ──
+function openUpload() {
+  document.getElementById('fileInput').click();
+}
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      originalImage = img;
+      renderCanvas();
+      showScreen('editorScreen');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+// ── Frame ──
+function selectFrame(id, el) {
+  document.querySelectorAll('.frame-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  currentFrame = id;
+  renderCanvas();
+}
+
+// ── Color ──
+function selectColor(el) {
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  textColor = el.dataset.color;
+  renderCanvas();
+}
+
+// ── Render canvas ──
+function renderCanvas() {
+  if (!originalImage) return;
+
+  const canvas = document.getElementById('photoCanvas');
+  const ctx = canvas.getContext('2d');
+  const frame = frames.find(f => f.id === currentFrame) || frames[0];
+
+  const imgW = originalImage.width;
+  const imgH = originalImage.height;
+
+  // Scale border relative to image size
+  const scale = Math.min(imgW, imgH) / 500;
+  const borderW = Math.round(frame.border * scale);
+
+  let cw, ch, imgX, imgY;
+
+  if (frame.polaroid) {
+    const side = Math.round(30 * scale);
+    const top = Math.round(30 * scale);
+    const bottom = Math.round(90 * scale);
+    cw = imgW + side * 2;
+    ch = imgH + top + bottom;
+    imgX = side;
+    imgY = top;
+  } else {
+    cw = imgW + borderW * 2;
+    ch = imgH + borderW * 2;
+    imgX = borderW;
+    imgY = borderW;
+  }
+
+  canvas.width = cw;
+  canvas.height = ch;
+
+  // Background
+  if (frame.id !== 'none') {
+    ctx.fillStyle = frame.color;
+    if (frame.radius) {
+      roundRect(ctx, 0, 0, cw, ch, Math.round(frame.radius * scale));
+      ctx.fill();
+      // Clip inner for rounded
+      ctx.save();
+      roundRect(ctx, imgX, imgY, imgW, imgH, Math.round(frame.radius * scale * 0.6));
+      ctx.clip();
+      ctx.drawImage(originalImage, imgX, imgY, imgW, imgH);
+      ctx.restore();
+    } else {
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.drawImage(originalImage, imgX, imgY, imgW, imgH);
+    }
+
+    // Polaroid shadow effect
+    if (frame.polaroid) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.12)';
+      ctx.shadowBlur = 20 * scale;
+      ctx.shadowOffsetY = 4 * scale;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-5, -5, cw + 10, ch + 10);
+      ctx.restore();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.drawImage(originalImage, imgX, imgY, imgW, imgH);
+    }
+  } else {
+    ctx.drawImage(originalImage, 0, 0, imgW, imgH);
+  }
+
+  // Text
+  const text = document.getElementById('textInput').value.trim();
+  if (text) {
+    const position = document.getElementById('textPosition').value;
+    const fontSize = Math.round(Math.min(cw, ch) * 0.05);
+
+    ctx.save();
+    ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = textColor;
+    ctx.strokeStyle = textColor === '#ffffff' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = Math.max(2, fontSize * 0.08);
+
+    let tx = cw / 2;
+    let ty;
+    if (position === 'top') {
+      ty = imgY + fontSize + 10 * scale;
+    } else if (position === 'center') {
+      ty = ch / 2;
+    } else {
+      // bottom
+      if (frame.polaroid) {
+        ty = imgY + imgH + ((ch - imgY - imgH) / 2) + fontSize * 0.35;
+      } else {
+        ty = imgY + imgH - fontSize * 0.5;
+      }
+    }
+
+    ctx.strokeText(text, tx, ty);
+    ctx.fillText(text, tx, ty);
+    ctx.restore();
+  }
+
+  // Add date for polaroid at bottom area
+  if (frame.polaroid && !text) {
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+    const dateFontSize = Math.round(Math.min(cw, ch) * 0.032);
+    ctx.save();
+    ctx.font = `${dateFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#999';
+    const dateY = imgY + imgH + ((ch - imgY - imgH) / 2) + dateFontSize * 0.35;
+    ctx.fillText(dateStr, cw / 2, dateY);
+    ctx.restore();
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ── Print ──
+function printPhoto() {
+  const canvas = document.getElementById('photoCanvas');
+  const printImg = document.getElementById('printImage');
+  printImg.src = canvas.toDataURL('image/png');
+  printImg.onload = () => {
+    window.print();
+  };
+}
+</script>
+</body>
+</html>
