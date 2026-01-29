@@ -710,7 +710,19 @@ async function printPhoto() {
 
   try {
     const canvas = document.getElementById('photoCanvas');
-    const imageData = canvas.toDataURL('image/png');
+    // 이미지 압축: JPEG, 최대 1800px
+    const maxSize = 1800;
+    let w = canvas.width, h = canvas.height;
+    if (w > maxSize || h > maxSize) {
+      const ratio = Math.min(maxSize / w, maxSize / h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+    }
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = w;
+    tmpCanvas.height = h;
+    tmpCanvas.getContext('2d').drawImage(canvas, 0, 0, w, h);
+    const imageData = tmpCanvas.toDataURL('image/jpeg', 0.85);
 
     const res = await fetch('/.netlify/functions/send-print', {
       method: 'POST',
@@ -719,11 +731,12 @@ async function printPhoto() {
     });
 
     if (res.ok) {
-      btn.textContent = '프린트 완료!';
+      btn.textContent = '프린트 요청 완료!';
       btn.style.background = '#34c759';
       setTimeout(() => {
         btn.textContent = originalText;
         btn.disabled = false;
+        btn.style.background = '#34c759';
       }, 3000);
     } else {
       throw new Error('전송 실패');
