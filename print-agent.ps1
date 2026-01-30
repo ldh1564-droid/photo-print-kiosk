@@ -11,16 +11,19 @@ using System.Drawing.Printing;
 public class PhotoPrinter {
     public static void PrintFile(string path) {
         Bitmap bmp = new Bitmap(path);
+        bool landscape = (bmp.Width > bmp.Height);
         PrintDocument doc = new PrintDocument();
-        doc.DefaultPageSettings.Landscape = (bmp.Width > bmp.Height);
+        doc.DefaultPageSettings.Landscape = landscape;
+        doc.DefaultPageSettings.PaperSize = new PaperSize("4x6", 400, 600);
+        doc.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
         doc.PrintPage += delegate(object s, PrintPageEventArgs e) {
-            float pw = e.MarginBounds.Width;
-            float ph = e.MarginBounds.Height;
+            float pw = e.PageBounds.Width;
+            float ph = e.PageBounds.Height;
             float r = Math.Min(pw / bmp.Width, ph / bmp.Height);
             int dw = (int)(bmp.Width * r);
             int dh = (int)(bmp.Height * r);
-            int dx = e.MarginBounds.X + (int)((pw - dw) / 2);
-            int dy = e.MarginBounds.Y + (int)((ph - dh) / 2);
+            int dx = (int)((pw - dw) / 2);
+            int dy = (int)((ph - dh) / 2);
             e.Graphics.DrawImage(bmp, dx, dy, dw, dh);
         };
         doc.Print();
