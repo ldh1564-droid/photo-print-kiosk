@@ -635,17 +635,12 @@ function renderCanvas() {
       sx = 0;
       sy = Math.round((imgH - sh) / 2);
     }
-    // 1) Draw frame first (background + characters)
+    // 1) Photo in the center area
+    ctx.drawImage(originalImage, sx, sy, sw, sh, px, py, pw, ph);
+    // 2) Frame overlay on top (center is transparent, edges have characters)
     if (overlayImg.complete) {
       ctx.drawImage(overlayImg, 0, 0, cw, ch);
     }
-    // 2) Draw photo BEHIND frame characters using destination-over
-    ctx.globalCompositeOperation = 'destination-over';
-    ctx.drawImage(originalImage, sx, sy, sw, sh, px, py, pw, ph);
-    // 3) Fill remaining area white (behind everything)
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, cw, ch);
-    ctx.globalCompositeOperation = 'source-over';
     // Date stamp
     if (frame.showDate) {
       const now = new Date();
