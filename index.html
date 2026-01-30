@@ -714,19 +714,7 @@ async function printPhoto() {
 
   try {
     const canvas = document.getElementById('photoCanvas');
-    // 이미지 압축: JPEG, 최대 1800px
-    const maxSize = 1800;
-    let w = canvas.width, h = canvas.height;
-    if (w > maxSize || h > maxSize) {
-      const ratio = Math.min(maxSize / w, maxSize / h);
-      w = Math.round(w * ratio);
-      h = Math.round(h * ratio);
-    }
-    const tmpCanvas = document.createElement('canvas');
-    tmpCanvas.width = w;
-    tmpCanvas.height = h;
-    tmpCanvas.getContext('2d').drawImage(canvas, 0, 0, w, h);
-    const imageData = tmpCanvas.toDataURL('image/jpeg', 0.85);
+    const imageData = canvas.toDataURL('image/jpeg', 0.95);
 
     const jobId = Date.now().toString();
     const res = await fetch(SUPABASE_URL + '/rest/v1/print_jobs', {
