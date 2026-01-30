@@ -14,17 +14,12 @@ public class PhotoPrinter {
         bool landscape = (bmp.Width > bmp.Height);
         PrintDocument doc = new PrintDocument();
         doc.DefaultPageSettings.Landscape = landscape;
+        doc.DefaultPageSettings.PaperSize = new PaperSize("4x6", 400, 600);
+        doc.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
         doc.PrintPage += delegate(object s, PrintPageEventArgs e) {
-            RectangleF area = e.PageSettings.PrintableArea;
-            if (e.PageSettings.Landscape) {
-                area = new RectangleF(area.Y, area.X, area.Height, area.Width);
-            }
-            float r = Math.Min(area.Width / bmp.Width, area.Height / bmp.Height);
-            int dw = (int)(bmp.Width * r);
-            int dh = (int)(bmp.Height * r);
-            int dx = (int)(area.X + (area.Width - dw) / 2);
-            int dy = (int)(area.Y + (area.Height - dh) / 2);
-            e.Graphics.DrawImage(bmp, dx, dy, dw, dh);
+            float pw = e.PageBounds.Width;
+            float ph = e.PageBounds.Height;
+            e.Graphics.DrawImage(bmp, 0, 0, pw, ph);
         };
         doc.Print();
         doc.Dispose();
