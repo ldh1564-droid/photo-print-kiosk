@@ -1,4 +1,5 @@
-const { getStore } = require("@netlify/blobs");
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
 exports.handler = async (event) => {
   const headers = {
@@ -16,9 +17,23 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore("print-jobs");
     const jobId = Date.now().toString();
-    await store.set(jobId, event.body);
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/print_jobs`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ id: jobId, image_data: event.body }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Supabase insert failed: ${res.status} ${errText}`);
+    }
 
     return {
       statusCode: 200,
