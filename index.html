@@ -430,7 +430,7 @@ let stream = null;
 
 // ── Frame definitions ──
 const frames = [
-  { id: 'hachiware', name: '하치와레',   border: 0,  color: '#ffffff',  inner: false, radius: 0, overlay: 'frames/hachiware.png', photoArea: { x: 0.05, y: 0.18, w: 0.90, h: 0.55 } },
+  { id: 'hachiware', name: '하치와레',   border: 0,  color: '#ffffff',  inner: false, radius: 0, overlay: 'frames/hachiware.png', photoArea: { x: 0.06, y: 0.17, w: 0.88, h: 0.65 }, showDate: true },
   { id: 'none',      name: '없음',       border: 0,  color: '#fff',    inner: false, radius: 0  },
   { id: 'white',     name: '화이트',     border: 40, color: '#ffffff',  inner: false, radius: 0  },
   { id: 'black',     name: '블랙',       border: 40, color: '#1a1a1a',  inner: false, radius: 0  },
@@ -639,6 +639,18 @@ function renderCanvas() {
     // Draw frame overlay on top
     if (overlayImg.complete) {
       ctx.drawImage(overlayImg, 0, 0, cw, ch);
+    }
+    // Date stamp
+    if (frame.showDate) {
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+      const dateFontSize = Math.round(cw * 0.032);
+      ctx.save();
+      ctx.font = `${dateFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#666';
+      ctx.fillText(dateStr, cw * 0.92, ch * 0.95);
+      ctx.restore();
     }
     imgX = px;
     imgY = py;
