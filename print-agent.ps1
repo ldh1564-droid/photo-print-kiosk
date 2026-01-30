@@ -1,9 +1,34 @@
 ### 셀프 포토 프린트 에이전트 ###
 # 이 스크립트를 Windows 데스크탑에서 실행하세요.
-# 손님이 웹페이지에서 "프린트" 버튼을 누르면 자동으로 인쇄됩니다.
 
 Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName System.Drawing.Printing
+
+Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @"
+using System;
+using System.Drawing;
+using System.Drawing.Printing;
+
+public class PhotoPrinter {
+    public static void PrintFile(string path) {
+        Bitmap bmp = new Bitmap(path);
+        PrintDocument doc = new PrintDocument();
+        doc.DefaultPageSettings.Landscape = (bmp.Width > bmp.Height);
+        doc.PrintPage += delegate(object s, PrintPageEventArgs e) {
+            float pw = e.MarginBounds.Width;
+            float ph = e.MarginBounds.Height;
+            float r = Math.Min(pw / bmp.Width, ph / bmp.Height);
+            int dw = (int)(bmp.Width * r);
+            int dh = (int)(bmp.Height * r);
+            int dx = e.MarginBounds.X + (int)((pw - dw) / 2);
+            int dy = e.MarginBounds.Y + (int)((ph - dh) / 2);
+            e.Graphics.DrawImage(bmp, dx, dy, dw, dh);
+        };
+        doc.Print();
+        doc.Dispose();
+        bmp.Dispose();
+    }
+}
+"@
 
 $siteUrl = "https://creative-naiad-54f6d9.netlify.app"
 $checkInterval = 5
@@ -15,35 +40,6 @@ Write-Host "  인쇄 대기 중..." -ForegroundColor Cyan
 Write-Host "  종료: Ctrl+C" -ForegroundColor Cyan
 Write-Host "=================================" -ForegroundColor Cyan
 Write-Host ""
-
-function Print-Image {
-    param([string]$FilePath)
-
-    $bitmap = New-Object System.Drawing.Bitmap($FilePath)
-    $isPortrait = $bitmap.Height -gt $bitmap.Width
-
-    $doc = New-Object System.Drawing.Printing.PrintDocument
-    $doc.DefaultPageSettings.Landscape = (-not $isPortrait)
-
-    $handler = [System.Drawing.Printing.PrintPageEventHandler]{
-        param($s, $e)
-        $pw = $e.MarginBounds.Width
-        $ph = $e.MarginBounds.Height
-        $iw = $bitmap.Width
-        $ih = $bitmap.Height
-        $r = [Math]::Min($pw / $iw, $ph / $ih)
-        $dw = [int]($iw * $r)
-        $dh = [int]($ih * $r)
-        $dx = $e.MarginBounds.X + [int](($pw - $dw) / 2)
-        $dy = $e.MarginBounds.Y + [int](($ph - $dh) / 2)
-        $e.Graphics.DrawImage($bitmap, $dx, $dy, $dw, $dh)
-    }
-
-    $doc.add_PrintPage($handler)
-    $doc.Print()
-    $doc.Dispose()
-    $bitmap.Dispose()
-}
 
 while ($true) {
     try {
@@ -61,7 +57,7 @@ while ($true) {
                 [System.IO.File]::WriteAllBytes($tempFile, $imageBytes)
 
                 Write-Host "[$(Get-Date -Format 'HH:mm:ss')] 인쇄 중..." -ForegroundColor Green
-                Print-Image -FilePath $tempFile
+                [PhotoPrinter]::PrintFile($tempFile)
 
                 Invoke-RestMethod -Uri "$siteUrl/.netlify/functions/done-job?id=$jobId" -Method Get -ErrorAction SilentlyContinue | Out-Null
                 Remove-Item $tempFile -ErrorAction SilentlyContinue
