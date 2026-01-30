@@ -410,6 +410,10 @@
 </div>
 
 <script>
+// ── Supabase ──
+const SUPABASE_URL = 'https://czvaoseccmeosvzawryf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6dmFvc2VjY21lb3N2emF3cnlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MzA0OTIsImV4cCI6MjA4NTMwNjQ5Mn0.Wy_Izc_Ggfa9FZ-EPLJ9RY4i_fLhlcxZoFuRsjMrfow';
+
 // ── State ──
 let originalImage = null;
 let currentFrame = 'none';
@@ -724,10 +728,16 @@ async function printPhoto() {
     tmpCanvas.getContext('2d').drawImage(canvas, 0, 0, w, h);
     const imageData = tmpCanvas.toDataURL('image/jpeg', 0.85);
 
-    const res = await fetch('/.netlify/functions/send-print', {
+    const jobId = Date.now().toString();
+    const res = await fetch(SUPABASE_URL + '/rest/v1/print_jobs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageData }),
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ id: jobId, image_data: JSON.stringify({ imageData }) }),
     });
 
     if (res.ok) {

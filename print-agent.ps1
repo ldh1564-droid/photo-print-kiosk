@@ -28,7 +28,9 @@ public class PhotoPrinter {
 }
 "@
 
-$siteUrl = "https://creative-naiad-54f6d9.netlify.app"
+$supabaseUrl = "https://czvaoseccmeosvzawryf.supabase.co"
+$supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6dmFvc2VjY21lb3N2emF3cnlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MzA0OTIsImV4cCI6MjA4NTMwNjQ5Mn0.Wy_Izc_Ggfa9FZ-EPLJ9RY4i_fLhlcxZoFuRsjMrfow"
+$headers = @{ "apikey" = $supabaseKey; "Authorization" = "Bearer $supabaseKey" }
 $checkInterval = 5
 
 Write-Host ""
@@ -41,14 +43,17 @@ Write-Host ""
 
 while ($true) {
     try {
-        $response = Invoke-RestMethod -Uri "$siteUrl/.netlify/functions/list-jobs" -Method Get -ErrorAction Stop
+        $jobs = Invoke-RestMethod -Uri "$supabaseUrl/rest/v1/print_jobs?select=id&order=id.asc" -Headers $headers -Method Get -ErrorAction Stop
 
-        foreach ($jobId in $response.jobs) {
+        foreach ($job in $jobs) {
+            $jobId = $job.id
             Write-Host "[$(Get-Date -Format 'HH:mm:ss')] 새 인쇄 작업 발견: $jobId" -ForegroundColor Yellow
 
             try {
-                $jobData = Invoke-RestMethod -Uri "$siteUrl/.netlify/functions/get-job?id=$jobId" -Method Get -ErrorAction Stop
-                $base64 = $jobData.imageData -replace '^data:image/\w+;base64,', ''
+                $rows = Invoke-RestMethod -Uri "$supabaseUrl/rest/v1/print_jobs?id=eq.$jobId&select=image_data" -Headers $headers -Method Get -ErrorAction Stop
+                $raw = $rows[0].image_data
+                $parsed = $raw | ConvertFrom-Json
+                $base64 = $parsed.imageData -replace '^data:image/\w+;base64,', ''
                 $imageBytes = [Convert]::FromBase64String($base64)
 
                 $tempFile = "$env:TEMP\photo_print_$jobId.jpg"
@@ -57,7 +62,8 @@ while ($true) {
                 Write-Host "[$(Get-Date -Format 'HH:mm:ss')] 인쇄 중..." -ForegroundColor Green
                 [PhotoPrinter]::PrintFile($tempFile)
 
-                Invoke-RestMethod -Uri "$siteUrl/.netlify/functions/done-job?id=$jobId" -Method Get -ErrorAction SilentlyContinue | Out-Null
+                $delHeaders = @{ "apikey" = $supabaseKey; "Authorization" = "Bearer $supabaseKey" }
+                Invoke-RestMethod -Uri "$supabaseUrl/rest/v1/print_jobs?id=eq.$jobId" -Headers $delHeaders -Method Delete -ErrorAction SilentlyContinue | Out-Null
                 Remove-Item $tempFile -ErrorAction SilentlyContinue
 
                 Write-Host "[$(Get-Date -Format 'HH:mm:ss')] 인쇄 완료!" -ForegroundColor Green
