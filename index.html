@@ -544,7 +544,7 @@ function capturePhoto() {
     renderCanvas();
     showScreen('editorScreen');
   };
-  img.src = tempCanvas.toDataURL('image/jpeg', 0.95);
+  img.src = tempCanvas.toDataURL('image/png');
 }
 
 // ── Upload ──
@@ -607,9 +607,9 @@ function renderCanvas() {
     const pa = frame.photoArea;
     // Canvas = frame aspect ratio (507:758)
     const frameRatio = 507 / 758;
-    // Use a reasonable canvas size
-    cw = 1014;
-    ch = 1516;
+    // 300DPI at 4x6 inch = 1200x1800, use 4x frame for high quality
+    cw = 2028;
+    ch = 3032;
     canvas.width = cw;
     canvas.height = ch;
     // White background
